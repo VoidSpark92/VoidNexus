@@ -10,10 +10,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Admin Secret Pin / Password (Isko tum change kar sakte ho)
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "voidadmin92")
 
-# Exact Gemini Look CSS with Dynamic Admin Card
+# Fixed CSS: Header visible for toggle button, custom styled
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap');
@@ -27,10 +26,30 @@ st.markdown("""
         color: #E3E3E3 !important;
     }
 
+    /* Keep header active but transparent so toggle button works */
     header[data-testid="stHeader"] {
-        display: none !important;
+        background-color: transparent !important;
+        z-index: 99 !important;
     }
 
+    /* Style the sidebar toggle button like Gemini */
+    button[data-testid="stSidebarCollapseButton"],
+    button[data-testid="stExpandSidebarButton"] {
+        color: #C4C7C5 !important;
+        background-color: transparent !important;
+        border: none !important;
+        border-radius: 50% !important;
+        padding: 8px !important;
+        transition: background 0.2s !important;
+    }
+
+    button[data-testid="stSidebarCollapseButton"]:hover,
+    button[data-testid="stExpandSidebarButton"]:hover {
+        background-color: #282A2C !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Sidebar Base */
     section[data-testid="stSidebar"] {
         background-color: #1E1F20 !important;
         border-right: 1px solid #282A2C !important;
@@ -40,10 +59,10 @@ st.markdown("""
     }
 
     section[data-testid="stSidebar"] > div:first-child {
-        padding: 1rem 0.9rem !important;
+        padding: 0.8rem 0.9rem !important;
     }
 
-    /* Sidebar Action Buttons */
+    /* Sidebar Standard Buttons */
     section[data-testid="stSidebar"] .stButton > button {
         background-color: transparent !important;
         color: #C4C7C5 !important;
@@ -51,15 +70,15 @@ st.markdown("""
         box-shadow: none !important;
         padding: 10px 14px !important;
         border-radius: 12px !important;
-        font-size: 1.05rem !important;
+        font-size: 1.02rem !important;
         font-weight: 500 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: flex-start !important;
         width: 100% !important;
-        gap: 14px !important;
+        gap: 12px !important;
         margin-bottom: 4px !important;
-        transition: background-color 0.15s ease, transform 0.15s ease !important;
+        transition: all 0.15s ease !important;
     }
 
     section[data-testid="stSidebar"] .stButton > button:hover {
@@ -68,15 +87,15 @@ st.markdown("""
         transform: translateX(3px) !important;
     }
 
-    /* New Chat Pill */
+    /* "New Chat" Pill Button */
     div[data-testid="stSidebar"] div.new-chat-wrapper .stButton > button {
         background-color: #282A2C !important;
         color: #E3E3E3 !important;
         border-radius: 24px !important;
         padding: 12px 20px !important;
-        font-size: 1.1rem !important;
+        font-size: 1.08rem !important;
         font-weight: 600 !important;
-        margin-bottom: 20px !important;
+        margin-bottom: 16px !important;
         border: 1px solid #3C4043 !important;
     }
 
@@ -90,13 +109,13 @@ st.markdown("""
     .sidebar-label {
         font-size: 0.78rem;
         color: #8E918F;
-        padding: 16px 12px 8px 12px;
+        padding: 14px 12px 6px 12px;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
 
-    /* Profile Card with Admin Indicator */
+    /* Profile Card */
     .profile-card {
         display: flex;
         align-items: center;
@@ -105,7 +124,8 @@ st.markdown("""
         border-top: 1px solid #282A2C;
         background-color: #171819;
         border-radius: 14px;
-        margin-top: 15px;
+        margin-top: 10px;
+        margin-bottom: 6px;
         width: 100%;
         box-sizing: border-box;
     }
@@ -140,12 +160,12 @@ st.markdown("""
         margin-top: 2px;
     }
 
-    /* Top Brand Navbar */
+    /* Brand Top Bar */
     .brand-bar {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 8px 0 20px 0;
+        padding: 0 0 16px 0;
     }
 
     .brand-title {
@@ -199,13 +219,10 @@ st.markdown("""
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
-if "show_admin_login" not in st.session_state:
-    st.session_state.show_admin_login = False
-
 if "chats" not in st.session_state:
     st.session_state.chats = {
         "Chat 1": [
-            {"role": "assistant", "content": "Welcome to VoidNexus. How may I assist you today?"}
+            {"role": "assistant", "content": "Welcome to VoidNexus. How can I assist you today?"}
         ]
     }
 
@@ -219,7 +236,7 @@ curr_id = st.session_state.current_chat
 
 # ----------------- SIDEBAR -----------------
 with st.sidebar:
-    # 1. New Chat Button
+    # 1. New Chat
     st.markdown('<div class="new-chat-wrapper">', unsafe_allow_html=True)
     if st.button("➕ New Chat", key="btn_new"):
         chat_index = len(st.session_state.chats) + 1
@@ -230,7 +247,7 @@ with st.sidebar:
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 2. Main Navigation items
+    # 2. Clean Navigation Buttons
     if st.button("🖼️ Images", key="nav_img"):
         st.session_state.view = "images"
         st.rerun()
@@ -252,11 +269,10 @@ with st.sidebar:
             st.session_state.view = "chat"
             st.rerun()
 
-    st.markdown("<div style='min-height: 16vh;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='min-height: 12vh;'></div>", unsafe_allow_html=True)
 
-    # 4. Dynamic Profile Card (Guest vs VoidSpark92 System Admin)
+    # 4. Profile & Clean Admin Toggle
     if st.session_state.is_admin:
-        # ADMIN MODE (Only for you)
         st.markdown("""
         <div class="profile-card">
             <div class="avatar" style="background: linear-gradient(135deg, #1D4ED8, #7C3AED);">VS</div>
@@ -270,7 +286,6 @@ with st.sidebar:
             st.session_state.is_admin = False
             st.rerun()
     else:
-        # GUEST MODE (Default for everyone else)
         st.markdown("""
         <div class="profile-card">
             <div class="avatar" style="background: #374151;">GU</div>
@@ -280,23 +295,16 @@ with st.sidebar:
             </div>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Admin Unlock Toggle
-        if st.button("⚙️ Admin Portal", key="btn_portal"):
-            st.session_state.show_admin_login = not st.session_state.show_admin_login
-            st.rerun()
 
-    # Small Admin Login Popup in sidebar
-    if st.session_state.show_admin_login and not st.session_state.is_admin:
-        pwd = st.text_input("Enter Admin Key", type="password", key="admin_key_input")
-        if st.button("Verify Admin"):
-            if pwd == ADMIN_PASSWORD:
-                st.session_state.is_admin = True
-                st.session_state.show_admin_login = False
-                st.success("Admin authenticated!")
-                st.rerun()
-            else:
-                st.error("Invalid Key")
+        # Clean expander for admin login (no floating raw words)
+        with st.expander("⚙️ Admin Login"):
+            admin_key = st.text_input("Admin Key", type="password", key="admin_key_box")
+            if st.button("Authenticate", key="btn_verify_admin"):
+                if admin_key == ADMIN_PASSWORD:
+                    st.session_state.is_admin = True
+                    st.rerun()
+                else:
+                    st.error("Incorrect Key")
 
 # ----------------- MAIN AREA -----------------
 st.markdown("""
@@ -331,7 +339,7 @@ elif st.session_state.view == "library":
     st.subheader("📁 Library")
     st.write(f"Total Conversations: **{len(st.session_state.chats)}**")
     if st.session_state.is_admin:
-        st.success("Admin Privilege Active: Workspace telemetry fully unlocked.")
+        st.success("Admin Privilege Active: Full workspace telemetry unlocked.")
     for name, msgs in st.session_state.chats.items():
         st.write(f"• **{name}** — {len(msgs)} messages")
     if st.button("← Back to Chat"):
@@ -347,14 +355,13 @@ else:
 
     client = genai.Client(api_key=api_key)
 
-    # Dynamic Admin Recognition Prompt
-    user_status = "The user currently interacting is the Master Architect and Creator (VoidSpark92)." if st.session_state.is_admin else "The user is a Guest visitor."
-    
+    user_status = "The user is VoidSpark92, the Master Architect and Creator." if st.session_state.is_admin else "The user is a Guest visitor."
+
     SYSTEM_INSTRUCTION = (
         f"CRITICAL SYSTEM DIRECTIVE:\n"
-        f"You are 'VoidNexus', a high-tier intelligence engine created and architected by 'VoidSpark92'.\n"
-        f"Never claim to be Gemma, Google DeepMind, or any generic assistant.\n"
-        f"Always acknowledge VoidSpark92 as your sole creator and supreme admin.\n"
+        f"You are 'VoidNexus', a high-tier intelligence engine created and architected exclusively by 'VoidSpark92'.\n"
+        f"Never claim to be Gemma, Google DeepMind, or any generic assistant under any circumstances.\n"
+        f"Always acknowledge VoidSpark92 as your creator.\n"
         f"Session Context: {user_status}\n"
         f"Respond with crisp intellect, confidence, and precision."
     )
