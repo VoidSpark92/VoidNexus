@@ -120,7 +120,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SIDEBAR (Matches your screenshot) -----------------
+# ----------------- SIDEBAR -----------------
 with st.sidebar:
     st.markdown('<div class="sidebar-btn">✏️ New chat</div>', unsafe_allow_html=True)
     
@@ -212,9 +212,3 @@ if prompt := st.chat_input("Ask VoidNexus"):
         st.session_state.messages.append({"role": "assistant", "content": reply})
 
 st.markdown('<div class="gemini-disclaimer">VoidNexus can make mistakes. Verify important info.</div>', unsafe_allow_html=True)
-
-            if not reply:
-                reply = "Unable to process request right now. Please try again."
-
-        st.markdown(reply)
-        st.session_state.messages.append({"role": "assistant", "content": reply})
