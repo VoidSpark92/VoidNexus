@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <!-- Fluid Curved Gradients -->
+    <linearGradient id="curveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F0FF" />
+      <stop offset="50%" stop-color="#7000FF" />
+      <stop offset="100%" stop-color="#FF007A" />
+    </linearGradient>
+
+    <!-- Warm Fluid Gradient -->
+    <linearGradient id="warmGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF3366" />
+      <stop offset="100%" stop-color="#FFB703" />
+    </linearGradient>
+  </defs>
+
+  <rect width="200" height="200" rx="46" fill="#131314" />
+
+  <!-- Primary Solid Blue Deep Arc -->
+  <path d="M 50 65 C 65 115, 88 155, 100 165 C 112 155, 135 115, 150 65" 
+        fill="none" stroke="#2563EB" stroke-width="14" stroke-linecap="round" />
+
+  <!-- Multi-Color Gradient Curved Ribbon -->
+  <path d="M 45 95 C 35 55, 78 35, 112 45 C 150 58, 168 108, 138 145 C 120 168, 88 162, 75 135" 
+        fill="none" stroke="url(#curveGrad)" stroke-width="11" stroke-linecap="round" />
+
+  <!-- Primary Crimson Sharp Contrast Arc -->
+  <path d="M 100 165 C 114 135, 130 100, 145 72" 
+        fill="none" stroke="#EF4444" stroke-width="8" stroke-linecap="round" />
+
+  <!-- Smooth Flowing Center Ribbon -->
+  <path d="M 75 80 C 90 120, 98 138, 100 142 C 105 138, 118 110, 128 90" 
+        fill="none" stroke="url(#warmGrad)" stroke-width="7" stroke-linecap="round" />
+
+  <!-- Core White Point -->
+  <circle cx="100" cy="102" r="5" fill="#FFFFFF" />
+</svg>
