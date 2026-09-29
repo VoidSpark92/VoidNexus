@@ -30,23 +30,33 @@ if prompt := st.chat_input("Ask VoidNexus..."):
     with st.chat_message("assistant"):
         with st.spinner("VoidNexus is thinking..."):
             reply = None
-            candidate_models = ["gemini-3.1-pro-preview", "gemini-3.8-flash"]
-            last_err = ""
+            last_err = None
 
-            for model_id in candidate_models:
+            # Fetch active text models automatically from your account
+            try:
+                available_models = [
+                    m.name for m in client.models.list()
+                    if "generateContent" in (m.supported_actions or [])
+                ]
+            except Exception:
+                available_models = ["gemini-3.8-flash", "gemini-3.1-pro-preview"]
+
+            # Try available models until one responds
+            for model_name in available_models:
                 try:
                     response = client.models.generate_content(
-                        model=model_id,
+                        model=model_name,
                         contents=f"{SYSTEM_PROMPT}\n\nUser: {prompt}",
                     )
-                    reply = response.text
-                    break
+                    if response.text:
+                        reply = response.text
+                        break
                 except Exception as e:
-                    last_err = str(e)
+                    last_err = e
                     continue
 
             if not reply:
-                reply = f"System Error: {last_err}"
+                reply = f"Error reaching AI engine: {last_err}"
 
         st.write(reply)
         st.session_state.messages.append({"role": "assistant", "content": reply})
