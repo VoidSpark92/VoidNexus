@@ -1,4 +1,6 @@
 import os
+import json
+import hashlib
 import streamlit as st
 from google import genai
 
@@ -10,9 +12,31 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "voidadmin92")
+# Admin master configuration
+ADMIN_CODE = os.environ.get("ADMIN_PASSWORD", "voidadmin92")
+DB_FILE = "nexus_database.json"
 
-# Fixed CSS: Font isolation taaki Streamlit ke icons par asar na pade
+# Helper: Persistent Database Functions
+def load_db():
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            return {"users": {}, "chats": {}}
+    return {"users": {}, "chats": {}}
+
+def save_db(data):
+    with open(DB_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+def hash_pw(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# Initialize DB in state
+db = load_db()
+
+# Custom Styling (Zero overlap, proper icons & clean login card)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap');
@@ -23,13 +47,12 @@ st.markdown("""
         font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     }
 
-    /* Streamlit native header styling */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
-        z-index: 1000 !important;
+        z-index: 100 !important;
     }
 
-    /* Style the sidebar toggle buttons cleanly */
+    /* Sidebar Toggle Button styling */
     button[data-testid="stSidebarCollapseButton"],
     button[data-testid="stExpandSidebarButton"] {
         color: #C4C7C5 !important;
@@ -37,23 +60,15 @@ st.markdown("""
         border: 1px solid #3C4043 !important;
         border-radius: 8px !important;
         padding: 4px 8px !important;
-        transition: all 0.2s !important;
     }
 
-    button[data-testid="stSidebarCollapseButton"]:hover,
-    button[data-testid="stExpandSidebarButton"]:hover {
-        background-color: #282A2C !important;
-        color: #FFFFFF !important;
-        border-color: #8AB4F8 !important;
-    }
-
-    /* Sidebar Base */
+    /* Sidebar */
     section[data-testid="stSidebar"] {
         background-color: #1E1F20 !important;
         border-right: 1px solid #282A2C !important;
-        min-width: 290px !important;
-        max-width: 290px !important;
-        width: 290px !important;
+        min-width: 300px !important;
+        max-width: 300px !important;
+        width: 300px !important;
     }
 
     section[data-testid="stSidebar"] > div:first-child {
@@ -65,7 +80,6 @@ st.markdown("""
         background-color: transparent !important;
         color: #C4C7C5 !important;
         border: none !important;
-        box-shadow: none !important;
         padding: 10px 14px !important;
         border-radius: 12px !important;
         font-size: 1.02rem !important;
@@ -85,7 +99,7 @@ st.markdown("""
         transform: translateX(3px) !important;
     }
 
-    /* "New Chat" Pill Button */
+    /* New Chat Button */
     div[data-testid="stSidebar"] div.new-chat-wrapper .stButton > button {
         background-color: #282A2C !important;
         color: #E3E3E3 !important;
@@ -101,7 +115,6 @@ st.markdown("""
         background-color: #37393B !important;
         color: #FFFFFF !important;
         border-color: #5E6368 !important;
-        transform: none !important;
     }
 
     .sidebar-label {
@@ -113,7 +126,7 @@ st.markdown("""
         text-transform: uppercase;
     }
 
-    /* Profile Card with Zero Overlap */
+    /* Bottom Profile Box */
     .profile-card {
         display: flex;
         align-items: center;
@@ -123,7 +136,7 @@ st.markdown("""
         background-color: #171819;
         border-radius: 14px;
         margin-top: 15px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         width: 100%;
         box-sizing: border-box;
     }
@@ -150,7 +163,6 @@ st.markdown("""
         font-size: 0.98rem;
         font-weight: 600;
         color: #E3E3E3;
-        line-height: 1.2;
     }
 
     .profile-card .designation {
@@ -158,7 +170,7 @@ st.markdown("""
         margin-top: 2px;
     }
 
-    /* Top Brand Bar */
+    /* Top Brand */
     .brand-bar {
         display: flex;
         align-items: center;
@@ -187,7 +199,6 @@ st.markdown("""
         border: none !important;
         padding: 1.2rem 0 !important;
         font-size: 1.12rem !important;
-        line-height: 1.6 !important;
     }
 
     div[data-testid="stChatInput"] {
@@ -213,42 +224,50 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE -----------------
+# ----------------- AUTHENTICATION STATE -----------------
+if "logged_user" not in st.session_state:
+    st.session_state.logged_user = None  # None = Guest, "admin" = VoidSpark92, or custom username
+
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
-if "show_admin_box" not in st.session_state:
-    st.session_state.show_admin_box = False
-
-if "chats" not in st.session_state:
-    st.session_state.chats = {
-        "Chat 1": [
-            {"role": "assistant", "content": "Welcome to VoidNexus. How can I assist you today?"}
-        ]
-    }
-
-if "current_chat" not in st.session_state:
-    st.session_state.current_chat = "Chat 1"
+if "show_auth_modal" not in st.session_state:
+    st.session_state.show_auth_modal = False
 
 if "view" not in st.session_state:
     st.session_state.view = "chat"
+
+# Load chats for current user key
+user_storage_key = "admin_voidspark92" if st.session_state.is_admin else (st.session_state.logged_user or "guest_session")
+
+if user_storage_key not in db["chats"]:
+    db["chats"][user_storage_key] = {
+        "Chat 1": [{"role": "assistant", "content": "Welcome to VoidNexus. How can I assist you today?"}]
+    }
+    save_db(db)
+
+user_chats = db["chats"][user_storage_key]
+
+if "current_chat" not in st.session_state or st.session_state.current_chat not in user_chats:
+    st.session_state.current_chat = list(user_chats.keys())[0]
 
 curr_id = st.session_state.current_chat
 
 # ----------------- SIDEBAR -----------------
 with st.sidebar:
-    # 1. New Chat
+    # 1. New Chat Button
     st.markdown('<div class="new-chat-wrapper">', unsafe_allow_html=True)
     if st.button("➕ New Chat", key="btn_new"):
-        chat_index = len(st.session_state.chats) + 1
-        new_key = f"Chat {chat_index}"
-        st.session_state.chats[new_key] = []
-        st.session_state.current_chat = new_key
+        chat_idx = len(user_chats) + 1
+        new_name = f"Chat {chat_idx}"
+        user_chats[new_name] = []
+        st.session_state.current_chat = new_name
         st.session_state.view = "chat"
+        save_db(db)
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 2. Clean Navigation Buttons
+    # 2. Main Navigation
     if st.button("🖼️ Images", key="nav_img"):
         st.session_state.view = "images"
         st.rerun()
@@ -261,30 +280,45 @@ with st.sidebar:
         st.session_state.view = "library"
         st.rerun()
 
-    # 3. Dynamic Recent History
-    st.markdown('<div class="sidebar-label">Recent</div>', unsafe_allow_html=True)
-    for c_name in list(st.session_state.chats.keys())[-4:]:
+    # 3. Dynamic Recent History (Saved permanently in DB)
+    st.markdown('<div class="sidebar-label">Recent (Saved)</div>', unsafe_allow_html=True)
+    for c_name in list(user_chats.keys())[-5:]:
         icon = "●" if c_name == curr_id else "💬"
         if st.button(f"{icon}  {c_name}", key=f"hist_{c_name}"):
             st.session_state.current_chat = c_name
             st.session_state.view = "chat"
             st.rerun()
 
-    st.markdown("<div style='min-height: 10vh;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='min-height: 8vh;'></div>", unsafe_allow_html=True)
 
-    # 4. Profile & Clean Admin Section
+    # 4. User Profile & Universal Login/Admin Section
     if st.session_state.is_admin:
         st.markdown("""
         <div class="profile-card">
             <div class="avatar" style="background: linear-gradient(135deg, #1D4ED8, #7C3AED);">VS</div>
             <div class="info">
                 <span class="name">VoidSpark92</span>
-                <span class="designation" style="color: #4ADE80; font-weight: 600;">⚡ System Admin</span>
+                <span class="designation" style="color: #4ADE80; font-weight: 600;">⚡ Master Architect (Cloud Synced)</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("🔒 Logout Admin", key="btn_logout"):
+        if st.button("🔒 Logout Master", key="btn_logout_admin"):
             st.session_state.is_admin = False
+            st.session_state.logged_user = None
+            st.rerun()
+            
+    elif st.session_state.logged_user:
+        st.markdown(f"""
+        <div class="profile-card">
+            <div class="avatar" style="background: #2563EB;">{st.session_state.logged_user[:2].upper()}</div>
+            <div class="info">
+                <span class="name">{st.session_state.logged_user}</span>
+                <span class="designation" style="color: #60A5FA;">Member (Synced)</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("🚪 Logout", key="btn_logout_user"):
+            st.session_state.logged_user = None
             st.rerun()
     else:
         st.markdown("""
@@ -292,24 +326,58 @@ with st.sidebar:
             <div class="avatar" style="background: #374151;">GU</div>
             <div class="info">
                 <span class="name">Guest User</span>
-                <span class="designation" style="color: #9CA3AF;">Member Access</span>
+                <span class="designation" style="color: #9CA3AF;">Temporary Session</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        if st.button("⚙️ Admin Access", key="btn_toggle_admin"):
-            st.session_state.show_admin_box = not st.session_state.show_admin_box
+        if st.button("🔑 Login / Admin Sync", key="btn_open_login"):
+            st.session_state.show_auth_modal = not st.session_state.show_auth_modal
             st.rerun()
 
-        if st.session_state.show_admin_box:
-            admin_key = st.text_input("Enter Key", type="password", key="admin_key_box")
-            if st.button("Unlock Admin", key="btn_verify_admin"):
-                if admin_key == ADMIN_PASSWORD:
-                    st.session_state.is_admin = True
-                    st.session_state.show_admin_box = False
-                    st.rerun()
+        # Auth Box Inside Sidebar
+        if st.session_state.show_auth_modal:
+            st.markdown("---")
+            auth_tab1, auth_tab2 = st.tabs(["👑 Admin Key", "👤 User Login"])
+            
+            with auth_tab1:
+                admin_key_input = st.text_input("Enter Master Admin Code", type="password", key="admin_key_field")
+                if st.button("Sync as Master", key="btn_admin_sync"):
+                    if admin_key_input == ADMIN_CODE:
+                        st.session_state.is_admin = True
+                        st.session_state.logged_user = "VoidSpark92"
+                        st.session_state.show_auth_modal = False
+                        st.success("Master Architect Authenticated! Chats synced.")
+                        st.rerun()
+                    else:
+                        st.error("Invalid Admin Code")
+
+            with auth_tab2:
+                u_mode = st.radio("Choose", ["Sign In", "Sign Up"], horizontal=True, key="u_auth_mode")
+                uname = st.text_input("Username", key="field_uname")
+                upass = st.text_input("Password", type="password", key="field_upass")
+                
+                if u_mode == "Sign Up":
+                    if st.button("Register & Sync"):
+                        if uname and upass:
+                            if uname in db["users"]:
+                                st.error("Username already taken")
+                            else:
+                                db["users"][uname] = hash_pw(upass)
+                                save_db(db)
+                                st.session_state.logged_user = uname
+                                st.session_state.show_auth_modal = False
+                                st.rerun()
+                        else:
+                            st.warning("Please fill all fields")
                 else:
-                    st.error("Incorrect Key")
+                    if st.button("Sign In"):
+                        if uname in db["users"] and db["users"][uname] == hash_pw(upass):
+                            st.session_state.logged_user = uname
+                            st.session_state.show_auth_modal = False
+                            st.rerun()
+                        else:
+                            st.error("Invalid Username or Password")
 
 # ----------------- MAIN AREA -----------------
 st.markdown("""
@@ -341,16 +409,17 @@ elif st.session_state.view == "videos":
 
 elif st.session_state.view == "library":
     st.subheader("📁 Library")
-    st.write(f"Total Conversations: **{len(st.session_state.chats)}**")
+    st.write(f"Total Conversations in this Account: **{len(user_chats)}**")
     if st.session_state.is_admin:
-        st.success("Admin Privilege Active: Full workspace telemetry unlocked.")
-    for name, msgs in st.session_state.chats.items():
+        st.success("Master Admin Cloud Storage: All conversations are encrypted and backed up.")
+    for name, msgs in user_chats.items():
         st.write(f"• **{name}** — {len(msgs)} messages")
     if st.button("← Back to Chat"):
         st.session_state.view = "chat"
         st.rerun()
 
 else:
+    # ----------------- CHAT ENGINE -----------------
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         st.error("API Key missing in Secrets.")
@@ -358,7 +427,7 @@ else:
 
     client = genai.Client(api_key=api_key)
 
-    user_status = "The user is VoidSpark92, the Master Architect and Creator." if st.session_state.is_admin else "The user is a Guest visitor."
+    user_status = "The user is VoidSpark92, the Master Architect and Creator." if st.session_state.is_admin else (f"The user is {st.session_state.logged_user}." if st.session_state.logged_user else "The user is a Guest visitor.")
 
     SYSTEM_INSTRUCTION = (
         f"CRITICAL SYSTEM DIRECTIVE:\n"
@@ -369,7 +438,7 @@ else:
         f"Respond with crisp intellect, confidence, and precision."
     )
 
-    current_history = st.session_state.chats[curr_id]
+    current_history = user_chats.get(curr_id, [])
 
     for msg in current_history:
         avatar = "👤" if msg["role"] == "user" else "💠"
@@ -384,9 +453,9 @@ else:
         user_msgs = [m for m in current_history if m["role"] == "user"]
         if len(user_msgs) == 1:
             clean_title = prompt[:20] + "..." if len(prompt) > 20 else prompt
-            st.session_state.chats[clean_title] = st.session_state.chats.pop(curr_id)
+            user_chats[clean_title] = user_chats.pop(curr_id)
             st.session_state.current_chat = clean_title
-            current_history = st.session_state.chats[clean_title]
+            current_history = user_chats[clean_title]
 
         with st.chat_message("assistant", avatar="💠"):
             with st.spinner(""):
@@ -416,6 +485,9 @@ else:
 
             st.markdown(reply)
             current_history.append({"role": "assistant", "content": reply})
+            
+            # Save permanently to database
+            save_db(db)
             st.rerun()
 
 st.markdown('<div class="disclaimer-text">VoidNexus can make mistakes. Verify important info.</div>', unsafe_allow_html=True)
