@@ -1,37 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="100%" height="100%">
   <defs>
-    <!-- Fluid Curved Gradients -->
-    <linearGradient id="curveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="neonCyanPink" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#00F0FF" />
-      <stop offset="50%" stop-color="#7000FF" />
+      <stop offset="40%" stop-color="#4F46E5" />
+      <stop offset="75%" stop-color="#9333EA" />
       <stop offset="100%" stop-color="#FF007A" />
     </linearGradient>
-
-    <!-- Warm Fluid Gradient -->
-    <linearGradient id="warmGrad" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FF3366" />
-      <stop offset="100%" stop-color="#FFB703" />
+    <linearGradient id="crimsonFlame" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF1744" />
+      <stop offset="60%" stop-color="#FF9100" />
+      <stop offset="100%" stop-color="#FFEA00" />
     </linearGradient>
   </defs>
 
-  <rect width="200" height="200" rx="46" fill="#131314" />
+  <!-- Deep Primary Blue Base Ribbon -->
+  <path d="M 52 70 C 72 135, 98 180, 120 192 C 142 180, 168 135, 188 70" 
+        fill="none" stroke="#1D4ED8" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" />
 
-  <!-- Primary Solid Blue Deep Arc -->
-  <path d="M 50 65 C 65 115, 88 155, 100 165 C 112 155, 135 115, 150 65" 
-        fill="none" stroke="#2563EB" stroke-width="14" stroke-linecap="round" />
+  <!-- Flowing Curved Gradient Loop -->
+  <path d="M 44 112 C 34 54, 92 28, 140 46 C 190 64, 204 132, 166 176 C 140 205, 96 195, 80 160" 
+        fill="none" stroke="url(#neonCyanPink)" stroke-width="13" stroke-linecap="round" />
 
-  <!-- Multi-Color Gradient Curved Ribbon -->
-  <path d="M 45 95 C 35 55, 78 35, 112 45 C 150 58, 168 108, 138 145 C 120 168, 88 162, 75 135" 
-        fill="none" stroke="url(#curveGrad)" stroke-width="11" stroke-linecap="round" />
+  <!-- Primary Solid Crimson Flare -->
+  <path d="M 120 192 C 138 152, 162 108, 180 74" 
+        fill="none" stroke="#E11D48" stroke-width="10" stroke-linecap="round" />
 
-  <!-- Primary Crimson Sharp Contrast Arc -->
-  <path d="M 100 165 C 114 135, 130 100, 145 72" 
-        fill="none" stroke="#EF4444" stroke-width="8" stroke-linecap="round" />
+  <!-- Inner Dynamic Golden Curved Core -->
+  <path d="M 84 90 C 104 138, 116 162, 120 166 C 126 158, 142 122, 156 96" 
+        fill="none" stroke="url(#crimsonFlame)" stroke-width="8" stroke-linecap="round" />
 
-  <!-- Smooth Flowing Center Ribbon -->
-  <path d="M 75 80 C 90 120, 98 138, 100 142 C 105 138, 118 110, 128 90" 
-        fill="none" stroke="url(#warmGrad)" stroke-width="7" stroke-linecap="round" />
-
-  <!-- Core White Point -->
-  <circle cx="100" cy="102" r="5" fill="#FFFFFF" />
+  <circle cx="120" cy="116" r="6" fill="#FFFFFF" />
 </svg>
