@@ -12,30 +12,39 @@ st.set_page_config(
 
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "voidadmin92")
 
-# Inject Google Fonts & Material Symbols correctly so icons never turn into plain text
+# Fixed CSS: Font isolation taaki Streamlit ke icons par asar na pade
 st.markdown("""
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap');
-
-    /* Preserve Material Icons font */
-    [class*="material-symbols"], [data-testid="stIconMaterial"] {
-        font-family: 'Material Symbols Rounded', sans-serif !important;
-    }
-
-    body, div:not([data-testid="stIconMaterial"]), p, h1, h2, h3, h4, input, textarea {
-        font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-    }
 
     .stApp {
         background-color: #131314 !important;
         color: #E3E3E3 !important;
+        font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     }
 
-    /* Keep header clean & functional */
+    /* Streamlit native header styling */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
-        z-index: 99 !important;
+        z-index: 1000 !important;
+    }
+
+    /* Style the sidebar toggle buttons cleanly */
+    button[data-testid="stSidebarCollapseButton"],
+    button[data-testid="stExpandSidebarButton"] {
+        color: #C4C7C5 !important;
+        background-color: #1E1F20 !important;
+        border: 1px solid #3C4043 !important;
+        border-radius: 8px !important;
+        padding: 4px 8px !important;
+        transition: all 0.2s !important;
+    }
+
+    button[data-testid="stSidebarCollapseButton"]:hover,
+    button[data-testid="stExpandSidebarButton"]:hover {
+        background-color: #282A2C !important;
+        color: #FFFFFF !important;
+        border-color: #8AB4F8 !important;
     }
 
     /* Sidebar Base */
@@ -51,7 +60,7 @@ st.markdown("""
         padding: 0.8rem 0.9rem !important;
     }
 
-    /* Sidebar Standard Navigation Buttons */
+    /* Sidebar Standard Buttons */
     section[data-testid="stSidebar"] .stButton > button {
         background-color: transparent !important;
         color: #C4C7C5 !important;
@@ -76,7 +85,7 @@ st.markdown("""
         transform: translateX(3px) !important;
     }
 
-    /* New Chat Pill Button */
+    /* "New Chat" Pill Button */
     div[data-testid="stSidebar"] div.new-chat-wrapper .stButton > button {
         background-color: #282A2C !important;
         color: #E3E3E3 !important;
@@ -263,7 +272,7 @@ with st.sidebar:
 
     st.markdown("<div style='min-height: 10vh;'></div>", unsafe_allow_html=True)
 
-    # 4. Profile & Clean Admin Section (NO EXPANDER, NO BROKEN ARROW)
+    # 4. Profile & Clean Admin Section
     if st.session_state.is_admin:
         st.markdown("""
         <div class="profile-card">
@@ -288,7 +297,6 @@ with st.sidebar:
         </div>
         """, unsafe_allow_html=True)
 
-        # Toggle button for admin portal
         if st.button("⚙️ Admin Access", key="btn_toggle_admin"):
             st.session_state.show_admin_box = not st.session_state.show_admin_box
             st.rerun()
