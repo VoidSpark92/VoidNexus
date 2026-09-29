@@ -1,5 +1,4 @@
 import os
-import time
 import streamlit as st
 from google import genai
 
@@ -31,26 +30,23 @@ if prompt := st.chat_input("Ask VoidNexus..."):
     with st.chat_message("assistant"):
         with st.spinner("VoidNexus is thinking..."):
             reply = None
-            # Retry loop if there's a temporary 503 spike
-            for attempt in range(4):
+            candidate_models = ["gemini-3.1-pro-preview", "gemini-3.8-flash"]
+            last_err = ""
+
+            for model_id in candidate_models:
                 try:
                     response = client.models.generate_content(
-                        model="gemini-3.8-flash",
+                        model=model_id,
                         contents=f"{SYSTEM_PROMPT}\n\nUser: {prompt}",
                     )
                     reply = response.text
                     break
                 except Exception as e:
-                    err_msg = str(e)
-                    if "503" in err_msg or "UNAVAILABLE" in err_msg:
-                        time.sleep(2)
-                        continue
-                    else:
-                        reply = f"Error: {e}"
-                        break
-            
+                    last_err = str(e)
+                    continue
+
             if not reply:
-                reply = "Server busy, please retry in a moment."
+                reply = f"System Error: {last_err}"
 
         st.write(reply)
         st.session_state.messages.append({"role": "assistant", "content": reply})
