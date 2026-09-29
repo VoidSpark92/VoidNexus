@@ -12,12 +12,18 @@ st.set_page_config(
 
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "voidadmin92")
 
-# Fixed CSS: Header visible for toggle button, custom styled
+# Inject Google Fonts & Material Symbols correctly so icons never turn into plain text
 st.markdown("""
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap');
 
-    * {
+    /* Preserve Material Icons font */
+    [class*="material-symbols"], [data-testid="stIconMaterial"] {
+        font-family: 'Material Symbols Rounded', sans-serif !important;
+    }
+
+    body, div:not([data-testid="stIconMaterial"]), p, h1, h2, h3, h4, input, textarea {
         font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     }
 
@@ -26,27 +32,10 @@ st.markdown("""
         color: #E3E3E3 !important;
     }
 
-    /* Keep header active but transparent so toggle button works */
+    /* Keep header clean & functional */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
         z-index: 99 !important;
-    }
-
-    /* Style the sidebar toggle button like Gemini */
-    button[data-testid="stSidebarCollapseButton"],
-    button[data-testid="stExpandSidebarButton"] {
-        color: #C4C7C5 !important;
-        background-color: transparent !important;
-        border: none !important;
-        border-radius: 50% !important;
-        padding: 8px !important;
-        transition: background 0.2s !important;
-    }
-
-    button[data-testid="stSidebarCollapseButton"]:hover,
-    button[data-testid="stExpandSidebarButton"]:hover {
-        background-color: #282A2C !important;
-        color: #FFFFFF !important;
     }
 
     /* Sidebar Base */
@@ -62,7 +51,7 @@ st.markdown("""
         padding: 0.8rem 0.9rem !important;
     }
 
-    /* Sidebar Standard Buttons */
+    /* Sidebar Standard Navigation Buttons */
     section[data-testid="stSidebar"] .stButton > button {
         background-color: transparent !important;
         color: #C4C7C5 !important;
@@ -87,7 +76,7 @@ st.markdown("""
         transform: translateX(3px) !important;
     }
 
-    /* "New Chat" Pill Button */
+    /* New Chat Pill Button */
     div[data-testid="stSidebar"] div.new-chat-wrapper .stButton > button {
         background-color: #282A2C !important;
         color: #E3E3E3 !important;
@@ -115,7 +104,7 @@ st.markdown("""
         text-transform: uppercase;
     }
 
-    /* Profile Card */
+    /* Profile Card with Zero Overlap */
     .profile-card {
         display: flex;
         align-items: center;
@@ -124,8 +113,8 @@ st.markdown("""
         border-top: 1px solid #282A2C;
         background-color: #171819;
         border-radius: 14px;
-        margin-top: 10px;
-        margin-bottom: 6px;
+        margin-top: 15px;
+        margin-bottom: 10px;
         width: 100%;
         box-sizing: border-box;
     }
@@ -160,7 +149,7 @@ st.markdown("""
         margin-top: 2px;
     }
 
-    /* Brand Top Bar */
+    /* Top Brand Bar */
     .brand-bar {
         display: flex;
         align-items: center;
@@ -219,6 +208,9 @@ st.markdown("""
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
+if "show_admin_box" not in st.session_state:
+    st.session_state.show_admin_box = False
+
 if "chats" not in st.session_state:
     st.session_state.chats = {
         "Chat 1": [
@@ -269,9 +261,9 @@ with st.sidebar:
             st.session_state.view = "chat"
             st.rerun()
 
-    st.markdown("<div style='min-height: 12vh;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='min-height: 10vh;'></div>", unsafe_allow_html=True)
 
-    # 4. Profile & Clean Admin Toggle
+    # 4. Profile & Clean Admin Section (NO EXPANDER, NO BROKEN ARROW)
     if st.session_state.is_admin:
         st.markdown("""
         <div class="profile-card">
@@ -296,12 +288,17 @@ with st.sidebar:
         </div>
         """, unsafe_allow_html=True)
 
-        # Clean expander for admin login (no floating raw words)
-        with st.expander("⚙️ Admin Login"):
-            admin_key = st.text_input("Admin Key", type="password", key="admin_key_box")
-            if st.button("Authenticate", key="btn_verify_admin"):
+        # Toggle button for admin portal
+        if st.button("⚙️ Admin Access", key="btn_toggle_admin"):
+            st.session_state.show_admin_box = not st.session_state.show_admin_box
+            st.rerun()
+
+        if st.session_state.show_admin_box:
+            admin_key = st.text_input("Enter Key", type="password", key="admin_key_box")
+            if st.button("Unlock Admin", key="btn_verify_admin"):
                 if admin_key == ADMIN_PASSWORD:
                     st.session_state.is_admin = True
+                    st.session_state.show_admin_box = False
                     st.rerun()
                 else:
                     st.error("Incorrect Key")
@@ -320,17 +317,16 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Navigation Handling
 if st.session_state.view == "images":
     st.subheader("🖼️ Images")
-    st.info("Image Generation Engine is currently standby.")
+    st.info("Image Generation Engine standby par hai.")
     if st.button("← Back to Chat"):
         st.session_state.view = "chat"
         st.rerun()
 
 elif st.session_state.view == "videos":
     st.subheader("🎥 Videos")
-    st.info("Video Studio Engine is currently standby.")
+    st.info("Video Studio Engine standby par hai.")
     if st.button("← Back to Chat"):
         st.session_state.view = "chat"
         st.rerun()
@@ -347,7 +343,6 @@ elif st.session_state.view == "library":
         st.rerun()
 
 else:
-    # ----------------- CHAT ENGINE -----------------
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         st.error("API Key missing in Secrets.")
