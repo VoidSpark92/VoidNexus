@@ -29,7 +29,7 @@ if prompt := st.chat_input("Ask VoidNexus..."):
 
     with st.chat_message("assistant"):
         reply = None
-        models_to_try = ["gemini-3.8-flash", "gemini-3.1-pro-preview"]
+        models_to_try = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-flash-latest"]
         
         with st.spinner("VoidNexus is thinking..."):
             for model_name in models_to_try:
