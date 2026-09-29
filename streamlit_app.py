@@ -2,7 +2,7 @@ import os
 import streamlit as st
 from google import genai
 
-# Page Config (Gemini Dark Theme)
+# Page Config
 st.set_page_config(
     page_title="VoidNexus",
     page_icon="💠",
@@ -10,222 +10,204 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Strict One-Page View Layout CSS
+# Admin Secret Pin / Password (Isko tum change kar sakte ho)
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "voidadmin92")
+
+# Exact Gemini Look CSS with Dynamic Admin Card
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    * {
+        font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     }
 
     .stApp {
         background-color: #131314 !important;
-        color: #E3E3E3;
-        overflow: hidden !important; /* Forces scrollbars out of the system */
+        color: #E3E3E3 !important;
     }
 
     header[data-testid="stHeader"] {
         display: none !important;
     }
 
-    /* Standard Wider Sidebar Layout */
     section[data-testid="stSidebar"] {
         background-color: #1E1F20 !important;
         border-right: 1px solid #282A2C !important;
-        min-width: 320px !important;
-        max-width: 320px !important;
-        width: 320px !important;
-        padding-top: 1rem !important;
-        overflow: hidden !important;
+        min-width: 290px !important;
+        max-width: 290px !important;
+        width: 290px !important;
     }
 
     section[data-testid="stSidebar"] > div:first-child {
-        width: 320px !important;
-        padding: 1rem 1rem !important;
-        height: 100vh !important;
-        position: relative !important;
+        padding: 1rem 0.9rem !important;
     }
 
-    /* Text & Icon Rescaling */
+    /* Sidebar Action Buttons */
     section[data-testid="stSidebar"] .stButton > button {
         background-color: transparent !important;
         color: #C4C7C5 !important;
         border: none !important;
         box-shadow: none !important;
-        padding: 12px 18px !important;
+        padding: 10px 14px !important;
         border-radius: 12px !important;
-        font-size: 1.12rem !important; /* Up-scaled Font Size */
+        font-size: 1.05rem !important;
         font-weight: 500 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: flex-start !important;
         width: 100% !important;
         gap: 14px !important;
-        margin-bottom: 6px !important;
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+        margin-bottom: 4px !important;
+        transition: background-color 0.15s ease, transform 0.15s ease !important;
     }
 
     section[data-testid="stSidebar"] .stButton > button:hover {
         background-color: #282A2C !important;
         color: #FFFFFF !important;
+        transform: translateX(3px) !important;
     }
 
-    /* "New Chat" Action Button CSS */
-    div[data-testid="stSidebar"] div.new-chat-container .stButton > button {
+    /* New Chat Pill */
+    div[data-testid="stSidebar"] div.new-chat-wrapper .stButton > button {
         background-color: #282A2C !important;
-        color: #FFFFFF !important;
-        border-radius: 28px !important;
-        padding: 14px 22px !important;
-        font-size: 1.15rem !important;
+        color: #E3E3E3 !important;
+        border-radius: 24px !important;
+        padding: 12px 20px !important;
+        font-size: 1.1rem !important;
         font-weight: 600 !important;
+        margin-bottom: 20px !important;
         border: 1px solid #3C4043 !important;
-        margin-bottom: 24px !important;
     }
 
-    div[data-testid="stSidebar"] div.new-chat-container .stButton > button:hover {
+    div[data-testid="stSidebar"] div.new-chat-wrapper .stButton > button:hover {
         background-color: #37393B !important;
-        border-color: #8AB4F8 !important;
+        color: #FFFFFF !important;
+        border-color: #5E6368 !important;
+        transform: none !important;
     }
 
-    /* User Profile Locking at bottom - Resolves Scroll Overlap Issue */
-    .user-footer {
-        position: absolute;
-        bottom: 22px;
-        left: 12px;
-        width: 296px;
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 14px;
-        border-top: 1px solid #282A2C;
-        background-color: #171819;
-        border-radius: 14px;
-    }
-
-    .user-footer .avatar {
-        width: 38px;
-        height: 38px;
-        border-radius: 50%;
-        background: #2563EB;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.95rem;
-        font-weight: bold;
-        color: white;
-    }
-
-    .user-footer .info-wrap {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .user-footer .user-name {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #E3E3E3;
-    }
-
-    .user-footer .role {
-        font-size: 0.8rem;
+    .sidebar-label {
+        font-size: 0.78rem;
         color: #8E918F;
-    }
-
-    .sidebar-section-title {
-        font-size: 0.86rem;
-        color: #8E918F;
-        padding: 24px 16px 12px 16px;
+        padding: 16px 12px 8px 12px;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
 
-    /* Main Area Headers */
-    .top-navbar {
+    /* Profile Card with Admin Indicator */
+    .profile-card {
         display: flex;
         align-items: center;
-        gap: 14px;
-        padding: 0.8rem 0 1.8rem 0;
+        gap: 12px;
+        padding: 12px 14px;
+        border-top: 1px solid #282A2C;
+        background-color: #171819;
+        border-radius: 14px;
+        margin-top: 15px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
-    .top-navbar .app-name {
-        font-size: 1.6rem;
+    .profile-card .avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #FFFFFF;
+        flex-shrink: 0;
+    }
+
+    .profile-card .info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .profile-card .name {
+        font-size: 0.98rem;
+        font-weight: 600;
+        color: #E3E3E3;
+        line-height: 1.2;
+    }
+
+    .profile-card .designation {
+        font-size: 0.76rem;
+        margin-top: 2px;
+    }
+
+    /* Top Brand Navbar */
+    .brand-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0 20px 0;
+    }
+
+    .brand-title {
+        font-size: 1.55rem;
         font-weight: 600;
         color: #E3E3E3;
     }
 
-    .core-pill {
-        font-size: 0.82rem;
+    .brand-tag {
+        font-size: 0.8rem;
         font-weight: 600;
-        background: #1E1F20;
+        background-color: #1E1F20;
         border: 1px solid #3C4043;
         color: #8AB4F8;
-        padding: 4px 12px;
-        border-radius: 8px;
+        padding: 3px 10px;
+        border-radius: 6px;
     }
 
-    /* Form and Layout alignment to standard web proportions */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important;
         border: none !important;
         padding: 1.2rem 0 !important;
-        font-size: 1.1rem !important;
+        font-size: 1.12rem !important;
+        line-height: 1.6 !important;
     }
 
     div[data-testid="stChatInput"] {
         background-color: #1E1F20 !important;
-        border-radius: 32px !important;
+        border-radius: 28px !important;
         border: 1px solid #3C4043 !important;
-        box-shadow: 0 4px 28px rgba(0, 0, 0, 0.4) !important;
-        padding: 6px 12px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+        padding: 4px 8px !important;
     }
 
     div[data-testid="stChatInput"]:focus-within {
         border-color: #8AB4F8 !important;
     }
 
+    .disclaimer-text {
+        text-align: center;
+        font-size: 0.78rem;
+        color: #8E918F;
+        margin-top: 14px;
+    }
+
     #MainMenu, footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-# Smooth Gradient Embedded SVG logo.svg Content
-LOGO_SVG = """
-<svg width="34" height="34" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="neonGlowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#00F0FF" />
-      <stop offset="45%" stop-color="#4F46E5" />
-      <stop offset="75%" stop-color="#9333EA" />
-      <stop offset="100%" stop-color="#FF007A" />
-    </linearGradient>
-    <linearGradient id="crimsonFlame" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FF1744" />
-      <stop offset="60%" stop-color="#FF9100" />
-      <stop offset="100%" stop-color="#FFEA00" />
-    </linearGradient>
-  </defs>
-  <path d="M 52 70 C 72 135, 98 180, 120 192 C 142 180, 168 135, 188 70" stroke="#1D4ED8" stroke-width="16" stroke-linecap="round"/>
-  <path d="M 44 112 C 34 54, 92 28, 140 46 C 190 64, 204 132, 166 176 C 140 205, 96 195, 80 160" stroke="url(#neonGlowGrad)" stroke-width="13" stroke-linecap="round"/>
-  <path d="M 120 192 C 138 152, 162 108, 180 74" stroke="#E11D48" stroke-width="10" stroke-linecap="round"/>
-  <path d="M 84 90 C 104 138, 116 162, 120 166 C 126 158, 142 122, 156 96" stroke="url(#crimsonFlame)" stroke-width="8" stroke-linecap="round"/>
-  <circle cx="120" cy="116" r="6" fill="#FFFFFF"/>
-</svg>
-"""
-
-# Fetch the active Logo Mark
-if os.path.exists("logo.svg"):
-    try:
-        with open("logo.svg", "r") as f:
-            LOGO_MARK = f.read()
-    except Exception:
-        LOGO_MARK = LOGO_SVG
-else:
-    LOGO_MARK = LOGO_SVG
-
 # ----------------- SESSION STATE -----------------
+if "is_admin" not in st.session_state:
+    st.session_state.is_admin = False
+
+if "show_admin_login" not in st.session_state:
+    st.session_state.show_admin_login = False
+
 if "chats" not in st.session_state:
-    st.session_state.chats = {"Chat 1": []}
+    st.session_state.chats = {
+        "Chat 1": [
+            {"role": "assistant", "content": "Welcome to VoidNexus. How may I assist you today?"}
+        ]
+    }
 
 if "current_chat" not in st.session_state:
     st.session_state.current_chat = "Chat 1"
@@ -233,145 +215,197 @@ if "current_chat" not in st.session_state:
 if "view" not in st.session_state:
     st.session_state.view = "chat"
 
+curr_id = st.session_state.current_chat
+
 # ----------------- SIDEBAR -----------------
 with st.sidebar:
-    # 1. Action Row "New Chat"
-    st.markdown('<div class="new-chat-container">', unsafe_allow_html=True)
-    if st.button("➕  New Chat", key="btn_new_chat"):
-        new_name = f"Chat {len(st.session_state.chats) + 1}"
-        st.session_state.chats[new_name] = []
-        st.session_state.current_chat = new_name
+    # 1. New Chat Button
+    st.markdown('<div class="new-chat-wrapper">', unsafe_allow_html=True)
+    if st.button("➕ New Chat", key="btn_new"):
+        chat_index = len(st.session_state.chats) + 1
+        new_key = f"Chat {chat_index}"
+        st.session_state.chats[new_key] = []
+        st.session_state.current_chat = new_key
         st.session_state.view = "chat"
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 2. Main Large Navbar Section (Excluding 'Search' to give space)
-    if st.button("🖼️   Images", key="btn_images"):
+    # 2. Main Navigation items
+    if st.button("🖼️ Images", key="nav_img"):
         st.session_state.view = "images"
         st.rerun()
 
-    if st.button("🎥   Videos", key="btn_videos"):
+    if st.button("🎥 Videos", key="nav_vid"):
         st.session_state.view = "videos"
         st.rerun()
 
-    if st.button("🗂️   Library", key="btn_library"):
+    if st.button("📁 Library", key="nav_lib"):
         st.session_state.view = "library"
         st.rerun()
 
-    # 3. Compact Recent Chat Panel
-    st.markdown('<div class="sidebar-section-title">Recent</div>', unsafe_allow_html=True)
-    for c_name in list(st.session_state.chats.keys())[-3:]:  # Show only top 3 to keep zero-scroll constraints
-        bullet = "● " if c_name == st.session_state.current_chat else "💬 "
-        if st.button(f"{bullet}  {c_name}", key=f"rec_{c_name}"):
+    # 3. Dynamic Recent History
+    st.markdown('<div class="sidebar-label">Recent</div>', unsafe_allow_html=True)
+    for c_name in list(st.session_state.chats.keys())[-4:]:
+        icon = "●" if c_name == curr_id else "💬"
+        if st.button(f"{icon}  {c_name}", key=f"hist_{c_name}"):
             st.session_state.current_chat = c_name
             st.session_state.view = "chat"
             st.rerun()
 
-    # 4. User Profile absolute locking at the bottom
-    st.markdown("""
-        <div class="user-footer">
-            <div class="avatar">VS</div>
-            <div class="info-wrap">
-                <span class="user-name">VoidSpark92</span>
-                <span class="role">Architect</span>
+    st.markdown("<div style='min-height: 16vh;'></div>", unsafe_allow_html=True)
+
+    # 4. Dynamic Profile Card (Guest vs VoidSpark92 System Admin)
+    if st.session_state.is_admin:
+        # ADMIN MODE (Only for you)
+        st.markdown("""
+        <div class="profile-card">
+            <div class="avatar" style="background: linear-gradient(135deg, #1D4ED8, #7C3AED);">VS</div>
+            <div class="info">
+                <span class="name">VoidSpark92</span>
+                <span class="designation" style="color: #4ADE80; font-weight: 600;">⚡ System Admin</span>
             </div>
         </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+        if st.button("🔒 Logout Admin", key="btn_logout"):
+            st.session_state.is_admin = False
+            st.rerun()
+    else:
+        # GUEST MODE (Default for everyone else)
+        st.markdown("""
+        <div class="profile-card">
+            <div class="avatar" style="background: #374151;">GU</div>
+            <div class="info">
+                <span class="name">Guest User</span>
+                <span class="designation" style="color: #9CA3AF;">Member Access</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Admin Unlock Toggle
+        if st.button("⚙️ Admin Portal", key="btn_portal"):
+            st.session_state.show_admin_login = not st.session_state.show_admin_login
+            st.rerun()
 
-# ----------------- MAIN VIEW -----------------
-st.markdown(f"""
-<div class="top-navbar">
-    <div style="width:34px; height:34px; display:flex; align-items:center;">{LOGO_MARK}</div>
-    <span class="app-name">VoidNexus</span>
-    <span class="core-pill">VoidSpark92 Core</span>
+    # Small Admin Login Popup in sidebar
+    if st.session_state.show_admin_login and not st.session_state.is_admin:
+        pwd = st.text_input("Enter Admin Key", type="password", key="admin_key_input")
+        if st.button("Verify Admin"):
+            if pwd == ADMIN_PASSWORD:
+                st.session_state.is_admin = True
+                st.session_state.show_admin_login = False
+                st.success("Admin authenticated!")
+                st.rerun()
+            else:
+                st.error("Invalid Key")
+
+# ----------------- MAIN AREA -----------------
+st.markdown("""
+<div class="brand-bar">
+    <svg width="32" height="32" viewBox="0 0 240 240" fill="none">
+        <path d="M 52 70 C 72 135, 98 180, 120 192 C 142 180, 168 135, 188 70" stroke="#1D4ED8" stroke-width="16" stroke-linecap="round"/>
+        <path d="M 44 112 C 34 54, 92 28, 140 46 C 190 64, 204 132, 166 176 C 140 205, 96 195, 80 160" stroke="#00F0FF" stroke-width="13" stroke-linecap="round"/>
+        <path d="M 120 192 C 138 152, 162 108, 180 74" stroke="#E11D48" stroke-width="10" stroke-linecap="round"/>
+        <circle cx="120" cy="116" r="6" fill="#FFFFFF"/>
+    </svg>
+    <span class="brand-title">VoidNexus</span>
+    <span class="brand-tag">VoidSpark92 Core</span>
 </div>
 """, unsafe_allow_html=True)
 
-# Application state-handlers
+# Navigation Handling
 if st.session_state.view == "images":
-    st.subheader("🖼️ Images Gallery")
-    st.info("Visual media indexing module is standby.")
-    if st.button("← Back to Chat", key="btn_b_images"):
+    st.subheader("🖼️ Images")
+    st.info("Image Generation Engine is currently standby.")
+    if st.button("← Back to Chat"):
         st.session_state.view = "chat"
         st.rerun()
 
 elif st.session_state.view == "videos":
-    st.subheader("🎥 Video Studio")
-    st.info("Video streaming and processing pipeline idle.")
-    if st.button("← Back to Chat", key="btn_b_videos"):
+    st.subheader("🎥 Videos")
+    st.info("Video Studio Engine is currently standby.")
+    if st.button("← Back to Chat"):
         st.session_state.view = "chat"
         st.rerun()
 
 elif st.session_state.view == "library":
-    st.subheader("🗂️ Library")
-    st.write(f"Active conversations inside workspace: **{len(st.session_state.chats)}**")
-    for name, messages in st.session_state.chats.items():
-        st.write(f"• **{name}** — {len(messages)} messages")
-    if st.button("← Back to Chat", key="btn_b_library"):
+    st.subheader("📁 Library")
+    st.write(f"Total Conversations: **{len(st.session_state.chats)}**")
+    if st.session_state.is_admin:
+        st.success("Admin Privilege Active: Workspace telemetry fully unlocked.")
+    for name, msgs in st.session_state.chats.items():
+        st.write(f"• **{name}** — {len(msgs)} messages")
+    if st.button("← Back to Chat"):
         st.session_state.view = "chat"
         st.rerun()
 
 else:
-    # API Handshakes
+    # ----------------- CHAT ENGINE -----------------
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         st.error("API Key missing in Secrets.")
         st.stop()
 
     client = genai.Client(api_key=api_key)
-    SYSTEM_PROMPT = (
-        "You are VoidNexus, an advanced AI system created exclusively by VoidSpark92. "
-        "Always identify as VoidNexus. Maintain an insightful, concise, and professional tone."
+
+    # Dynamic Admin Recognition Prompt
+    user_status = "The user currently interacting is the Master Architect and Creator (VoidSpark92)." if st.session_state.is_admin else "The user is a Guest visitor."
+    
+    SYSTEM_INSTRUCTION = (
+        f"CRITICAL SYSTEM DIRECTIVE:\n"
+        f"You are 'VoidNexus', a high-tier intelligence engine created and architected by 'VoidSpark92'.\n"
+        f"Never claim to be Gemma, Google DeepMind, or any generic assistant.\n"
+        f"Always acknowledge VoidSpark92 as your sole creator and supreme admin.\n"
+        f"Session Context: {user_status}\n"
+        f"Respond with crisp intellect, confidence, and precision."
     )
 
-    curr_chat = st.session_state.current_chat
-    chat_history = st.session_state.chats[curr_chat]
+    current_history = st.session_state.chats[curr_id]
 
-    # Chat Log Window
-    for msg in chat_history:
+    for msg in current_history:
         avatar = "👤" if msg["role"] == "user" else "💠"
         with st.chat_message(msg["role"], avatar=avatar):
             st.markdown(msg["content"])
 
-    # Sticky chat interface
     if prompt := st.chat_input("Ask VoidNexus..."):
-        chat_history.append({"role": "user", "content": prompt})
+        current_history.append({"role": "user", "content": prompt})
         with st.chat_message("user", avatar="👤"):
             st.markdown(prompt)
 
-        # Truncated renaming for fast visual processing
-        if len(chat_history) == 1:
+        user_msgs = [m for m in current_history if m["role"] == "user"]
+        if len(user_msgs) == 1:
             clean_title = prompt[:20] + "..." if len(prompt) > 20 else prompt
-            st.session_state.chats[clean_title] = st.session_state.chats.pop(curr_chat)
+            st.session_state.chats[clean_title] = st.session_state.chats.pop(curr_id)
             st.session_state.current_chat = clean_title
-            chat_history = st.session_state.chats[clean_title]
+            current_history = st.session_state.chats[clean_title]
 
         with st.chat_message("assistant", avatar="💠"):
             with st.spinner(""):
                 reply = None
                 try:
-                    models = [m.name for m in client.models.list() if "generateContent" in (m.supported_actions or [])]
+                    available_models = [
+                        m.name for m in client.models.list()
+                        if "generateContent" in (m.supported_actions or [])
+                    ]
                 except Exception:
-                    models = ["gemini-3.8-flash", "gemini-3.1-pro-preview"]
+                    available_models = ["gemini-3.8-flash", "gemini-3.1-pro-preview"]
 
-                for m in models:
+                for model_name in available_models:
                     try:
-                        res = client.models.generate_content(
-                            model=m,
-                            contents=f"{SYSTEM_PROMPT}\n\nUser: {prompt}"
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=f"{SYSTEM_INSTRUCTION}\n\nUser: {prompt}"
                         )
-                        if res.text:
-                            reply = res.text
+                        if response.text:
+                            reply = response.text
                             break
                     except Exception:
                         continue
 
                 if not reply:
-                    reply = "System busy, please try again."
+                    reply = "System busy. Please try again shortly."
 
             st.markdown(reply)
-            chat_history.append({"role": "assistant", "content": reply})
+            current_history.append({"role": "assistant", "content": reply})
             st.rerun()
 
-# Anchored footer
-st.markdown("<p style='text-align:center; font-size:0.8rem; color:#8E918F; margin-top:24px;'>VoidNexus can make mistakes. Verify important info.</p>", unsafe_allow_html=True)
+st.markdown('<div class="disclaimer-text">VoidNexus can make mistakes. Verify important info.</div>', unsafe_allow_html=True)
